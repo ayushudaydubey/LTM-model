@@ -10,8 +10,20 @@ const response  = await ai.models.generateContent({
   model:"gemini-2.5-flash",
   contents:content
 })
-return response.candidates[0].content.parts[0].text 
+return response.text
+}
+
+async function genrateVectors(content) {
+  const response = await ai.models.embedContent({
+    model: 'gemini-embedding-001',
+        contents: content,
+        config:{
+          outputDimensionality:768
+        }
+  })
+  return response.embeddings[0].values;
+
 }
 
 
-module.exports = {generateResponse}
+module.exports = {generateResponse,genrateVectors}
