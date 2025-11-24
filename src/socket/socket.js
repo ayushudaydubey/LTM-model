@@ -70,24 +70,40 @@ function initSocketServer(httpServer) {
       console.log(memory);
 
 
-      const chatHistory = await messageModel.find({
+       const chatHistory = await messageModel.find({
         chat: messagePayload.chat
       }).sort({ createdAt: -1 }).limit(20).lean()
       chatHistory.reverse();
-      // console.log(chatHistory);
+      // console.log(chatHistory)
+      // ;
 
-
-
-
-      const response = await aiService.generateResponse(chatHistory.map(item => {
+      const stm = chatHistory.map(item => {
 
         return {
           role: item.role,
           parts: [{ text: item.content }]
         }
+      })
+
+      const ltm = [
+        {
+          role:"user",
+          parts:[{text:`
+            these are some previous messages  from the chat ,use them to genrate a response 
+
+            ${memory.map(item=>item.metadata.text).join("/n")}
+            `}]
+        }
+      ]
+
+      console.log(ltm[0]);
+      console.log(stm);
+      
+      
+      
 
 
-      }))
+      const response = await aiService.generateResponse([...ltm,...stm])
 
       const responseMessages = await messageModel.create({
         user: socket.user._id,
