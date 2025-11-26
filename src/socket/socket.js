@@ -5,8 +5,6 @@ const userModel = require("../models/userModel")
 const aiService = require("../services/ai.services")
 const messageModel = require("../models/messageModel")
 const { queryMemory, createMemory } = require("../services/vector.service")
-const { chat } = require("@pinecone-database/pinecone/dist/assistant/data/chat")
-
 
 function initSocketServer(httpServer) {
 
@@ -37,6 +35,7 @@ function initSocketServer(httpServer) {
 
     socket.on("ai-message", async (messagePayload) => {
 
+      // FIXED: role MUST be "user"
       const message = await messageModel.create({
         user: socket.user._id,
         chat: messagePayload.chat,
@@ -44,10 +43,7 @@ function initSocketServer(httpServer) {
         role: "user"
       })
 
-
       const vectors = await aiService.genrateVectors(messagePayload.content)
-
-      console.log("vectors ==> ", vectors);
 
       await createMemory({
         vectors,
@@ -61,49 +57,46 @@ function initSocketServer(httpServer) {
 
       const memory = await queryMemory({
         queryVector: vectors,
-        limit: 2,
+        limit: 5,
         metadata: {
-
+          user: socket.user._id
         }
       })
 
       console.log(memory);
 
-
-       const chatHistory = await messageModel.find({
+      const chatHistory = await messageModel.find({
         chat: messagePayload.chat
       }).sort({ createdAt: -1 }).limit(20).lean()
+
       chatHistory.reverse();
-      // console.log(chatHistory)
-      // ;
 
       const stm = chatHistory.map(item => {
-
         return {
-          role: item.role,
+          // FIX: convert any invalid role to "user"
+          role: item.role === "model" ? "model" : "user",
           parts: [{ text: item.content }]
         }
       })
 
       const ltm = [
         {
-          role:"user",
-          parts:[{text:`
+          // FIX: "system" → "user"
+          role: "user",
+          parts: [{
+            text: `
             these are some previous messages  from the chat ,use them to genrate a response 
 
-            ${memory.map(item=>item.metadata.text).join("/n")}
-            `}]
+            ${memory.map(item => item.metadata.text).join("\n")}
+            `
+          }]
         }
       ]
 
       console.log(ltm[0]);
       console.log(stm);
-      
-      
-      
 
-
-      const response = await aiService.generateResponse([...ltm,...stm])
+      const response = await aiService.generateResponse([...ltm, ...stm])
 
       const responseMessages = await messageModel.create({
         user: socket.user._id,
@@ -124,13 +117,9 @@ function initSocketServer(httpServer) {
         }
       })
 
-
       socket.emit("ai-response", {
         content: response,
         chat: messagePayload.chat
-
-
-
       })
 
     })
