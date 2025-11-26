@@ -1,7 +1,7 @@
 const mongooes  = require ("mongoose")
 
 const chatSchema  = mongooes.Schema({
-  chat:{
+  title:{
     type:String,
   },
   user:{

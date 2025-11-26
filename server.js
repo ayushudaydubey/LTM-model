@@ -5,7 +5,7 @@ const { initSocketServer } = require("./src/socket/socket");
 const httpServer = require('http').createServer(app)
 
 
-initSocketServer(httpServer)
+const io = initSocketServer(httpServer)
 
 
 httpServer.listen(3000,()=>{
