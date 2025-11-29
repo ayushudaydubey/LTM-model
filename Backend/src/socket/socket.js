@@ -8,7 +8,13 @@ const { queryMemory, createMemory } = require("../services/vector.service")
 
 function initSocketServer(httpServer) {
 
-  const io = new Server(httpServer, {})
+  const io = new Server(httpServer, {
+    cors: {
+      origin: 'http://localhost:5173',
+      methods: ['GET', 'POST'],
+      credentials: true
+    }
+  })
 
   io.use(async (socket, next) => {
     const cookies = cookie.parse(socket.handshake.headers?.cookie || "")
@@ -31,7 +37,7 @@ function initSocketServer(httpServer) {
   })
 
   io.on("connection", async (socket) => {
-    console.log("user connected ", socket.id);
+    // console.log("user connected ", socket.id);
 
     socket.on("ai-message", async (messagePayload) => {
 
@@ -109,8 +115,8 @@ function initSocketServer(httpServer) {
         }
       ]
 
-      console.log(ltm[0]);
-      console.log(stm);
+      // console.log(ltm[0]);
+      // console.log(stm);
 
       const response = await aiService.generateResponse([...ltm, ...stm])
 

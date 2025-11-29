@@ -8,7 +8,12 @@ async function generateResponse(content) {
 
 const response  = await ai.models.generateContent({
   model:"gemini-2.5-flash",
-  contents:content
+  contents:content,
+  config:{
+    temperature:0.6,
+    systemInstruction:""
+  }
+
 })
 return response.text
 }

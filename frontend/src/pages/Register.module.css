@@ -1,0 +1,10 @@
+.container {
+  max-width: 520px;
+  margin: 24px auto;
+  padding: 16px;
+}
+.title { font-size: 1.5rem; margin-bottom: 12px }
+.form { display:flex; flex-direction:column; gap:12px }
+.field { display:flex; flex-direction:column; gap:6px }
+.input { padding:8px 10px; border:1px solid #ddd; border-radius:6px }
+.submit { background:#0a8f5a; color:white; padding:8px 12px; border:none; border-radius:6px }

@@ -1,0 +1,5 @@
+.container { max-width:720px }
+.msg { color:#c0392b }
+.form { display:flex; gap:8px; margin-top:12px }
+.input { flex:1; padding:8px; border:1px solid #ddd; border-radius:6px }
+.btn { background:#0366d6; color:white; border:none; padding:8px 12px; border-radius:6px }
