@@ -20,6 +20,8 @@ export default function Chat() {
   const navigate = useNavigate()
   const location = useLocation()
 
+  const activeId = location.pathname.startsWith('/chat/') ? location.pathname.split('/')[2] : null
+
   useEffect(() => {
     // keep chats in sync if other tab modified them
     function onStorage(e) {
@@ -35,6 +37,7 @@ export default function Chat() {
   }
 
   function handleOpen(id) {
+    localStorage.setItem('lastChat', id)
     navigate(`/chat/${id}`)
   }
 
@@ -43,8 +46,23 @@ export default function Chat() {
     setChats(next)
     saveChats(next)
     // if currently viewing this chat, navigate to /chat
+    const last = localStorage.getItem('lastChat')
+    if (last === id) localStorage.removeItem('lastChat')
     if (location.pathname === `/chat/${id}`) navigate('/chat')
   }
+
+  // if user lands on /chat (no id), try to open last active chat or first chat
+  useEffect(() => {
+    if (location.pathname === '/chat') {
+      const last = localStorage.getItem('lastChat')
+      if (last && chats.find((c) => c.id === last)) {
+        navigate(`/chat/${last}`)
+      } else if (chats.length > 0) {
+        // open first chat by default
+        navigate(`/chat/${chats[0].id}`)
+      }
+    }
+  }, [location.pathname, chats, navigate])
 
   return (
     <div className={styles.layout}>
@@ -58,7 +76,12 @@ export default function Chat() {
           {chats.length === 0 && <li className={styles.empty}>No chats yet — create one.</li>}
           {chats.map((c) => (
             <li key={c.id} className={styles.item}>
-              <button className={styles.open} onClick={() => handleOpen(c.id)}>{c.title || 'Untitled'}</button>
+              <button
+                className={activeId === c.id ? `${styles.open} ${styles.openActive}` : styles.open}
+                onClick={() => handleOpen(c.id)}
+              >
+                {c.title || 'Untitled'}
+              </button>
               <button className={styles.delete} onClick={() => handleDelete(c.id)}>✕</button>
             </li>
           ))}

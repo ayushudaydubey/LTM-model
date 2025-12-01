@@ -126,6 +126,13 @@
   outline-offset: 2px;
 }
 
+/* Active/open chat button */
+.openActive {
+  background: linear-gradient(90deg, rgba(125,211,252,0.12), rgba(110,231,183,0.06));
+  box-shadow: 0 8px 28px rgba(125,211,252,0.06);
+  border: 1px solid rgba(125,211,252,0.12);
+}
+
 /* Delete button */
 .delete {
   background: transparent;

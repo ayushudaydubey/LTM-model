@@ -1,7 +1,8 @@
 import { useState } from 'react'
-
+import styles from './Login.module.css'
 import { useNavigate } from 'react-router-dom'
 import axiosInstance from '../axios';
+
 
 
 export default function Login() {
@@ -35,17 +36,19 @@ export default function Login() {
   };
 
   return (
-    <div>
-      <h2>Login</h2>
-      <p>{msg}</p>
+    <div className={styles.loginPage}>
+      <div className={styles.loginCard}>
+        <h2>Login</h2>
+        <p className={styles.message}>{msg}</p>
 
-      <form onSubmit={handleSubmit}>
-        <input name="email" placeholder="Email" onChange={handleChange} />
+        <form onSubmit={handleSubmit} className={styles.loginForm}>
+          <input name="email" placeholder="Email" onChange={handleChange} />
 
-        <input name="password" type="password" placeholder="Password" onChange={handleChange} />
+          <input name="password" type="password" placeholder="Password" onChange={handleChange} />
 
-        <button type="submit">Login</button>
-      </form>
+          <button type="submit">Login</button>
+        </form>
+      </div>
     </div>
   );
 }

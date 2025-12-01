@@ -1,7 +1,7 @@
 import { useState } from 'react'
-
 import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
+import styles from './Register.module.css'
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -34,32 +34,35 @@ export default function Register() {
       });
 
       setMsg(res.data.message)
-      // optional: navigate to login after successful registration
       if (res.status === 201 || res.status === 200) {
         navigate('/login')
       }
     } catch (err) {
-      if (!err.response) setMsg('Server unreachable. Is backend running on port 3000?')
+      if (!err.response) setMsg('Server unreachable. Is backend running?')
       else setMsg(err.response?.data?.message || 'Error')
     }
   };
 
   return (
-    <div>
-      <h2>Register</h2>
-      <p>{msg}</p>
+    <div className={styles.registerPage}>
+      <div className={styles.registerCard}>
+        <h2>Register</h2>
 
-      <form onSubmit={handleSubmit}>
-        <input name="email" placeholder="Email" onChange={handleChange} />
+        {msg && <p className={styles.message}>{msg}</p>}
 
-        <input name="firstName" placeholder="First Name" onChange={handleChange} />
+        <form onSubmit={handleSubmit} className={styles.registerForm}>
 
-        <input name="lastName" placeholder="Last Name" onChange={handleChange} />
+          <input name="email" placeholder="Email" onChange={handleChange} />
 
-        <input name="password" type="password" placeholder="Password" onChange={handleChange} />
+          <input name="firstName" placeholder="First Name" onChange={handleChange} />
 
-        <button type="submit">Register</button>
-      </form>
+          <input name="lastName" placeholder="Last Name" onChange={handleChange} />
+
+          <input name="password" type="password" placeholder="Password" onChange={handleChange} />
+
+          <button type="submit">Create Account</button>
+        </form>
+      </div>
     </div>
   );
 }

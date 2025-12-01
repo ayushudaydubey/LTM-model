@@ -1,35 +1,123 @@
+/* Stylish dark-mode CSS for the provided page */
+:root {
+  --bg: #050507;
+  --panel: #0b0b0d;
+  --muted: #9aa0ab;
+  --text: #e6eef8;
+  --accent: #6ee7b7;    /* mint */
+  --accent-2: #7dd3fc;  /* cyan */
+  --glass: rgba(255,255,255,0.03);
+  --radius: 12px;
+  --shadow: 0 8px 30px rgba(0,0,0,0.65);
+  --focus: rgba(125,211,252,0.14);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Apply to whole page (optional) */
+body {
+  background: radial-gradient(800px 300px at 10% 10%, rgba(125,211,252,0.02), transparent 6%),
+              radial-gradient(600px 240px at 90% 90%, rgba(110,231,183,0.02), transparent 6%),
+              var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Container */
 .container {
   max-width: 720px;
-  margin: 32px auto;
+  margin: 48px auto;
   text-align: center;
-  padding: 24px;
+  padding: 28px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.006));
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255,255,255,0.03);
+  backdrop-filter: blur(6px);
 }
+
+/* Title */
 .title {
   font-size: 2rem;
   margin: 0 0 8px 0;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--text);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
 }
+
+/* Lead / subtitle */
 .lead {
-  color: #555;
+  color: var(--muted);
   margin-bottom: 16px;
+  font-size: 1rem;
+  line-height: 1.5;
 }
+
+/* Actions row */
 .actions {
   display: flex;
   gap: 12px;
   justify-content: center;
-  margin-top: 16px;
+  margin-top: 20px;
+  flex-wrap: wrap;
 }
+
+/* Primary button */
 .button {
-  background: #0366d6;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 6px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: rgba(2,6,23,0.98);
+  padding: 10px 16px;
+  border-radius: 10px;
   text-decoration: none;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(110,231,183,0.06);
+  border: none;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
+.button:hover { transform: translateY(-3px); }
+.button:active { transform: translateY(0); opacity: 0.95; }
+.button:focus { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+/* Secondary button */
 .buttonSecondary {
   background: transparent;
-  color: #0366d6;
-  border: 1px solid #0366d6;
-  padding: 8px 14px;
-  border-radius: 6px;
+  color: var(--accent-2);
+  border: 1px solid rgba(125,211,252,0.16);
+  padding: 10px 16px;
+  border-radius: 10px;
   text-decoration: none;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .12s ease, transform .12s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.buttonSecondary:hover {
+  background: rgba(125,211,252,0.04);
+  transform: translateY(-2px);
+}
+.buttonSecondary:focus { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+/* Small-screen adjustments */
+@media (max-width: 520px) {
+  .container { margin: 24px 16px; padding: 18px; }
+  .title { font-size: 1.5rem; }
+  .actions { gap: 8px; }
+  .button, .buttonSecondary { padding: 10px 12px; font-size: 14px; }
+}
+
+/* Optional: support prefers-color-scheme (enforce dark only in dark mode) */
+@media (prefers-color-scheme: light) {
+  /* If user prefers light, slightly soften background and borders */
+  body { background: #0f1112; }
+  .container { background: rgba(255,255,255,0.01); }
 }

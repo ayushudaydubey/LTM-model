@@ -1,10 +1,78 @@
-.container {
-  max-width: 420px;
-  margin: 24px auto;
-  padding: 16px;
+.loginPage {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #0f0f0f, #1a1a1d);
+  font-family: 'Inter', sans-serif;
 }
-.title { font-size: 1.5rem; margin-bottom: 12px }
-.form { display:flex; flex-direction:column; gap:12px }
-.field { display:flex; flex-direction:column; gap:6px }
-.input { padding:8px 10px; border:1px solid #ddd; border-radius:6px }
-.submit { background:#0366d6; color:white; padding:8px 12px; border:none; border-radius:6px }
+
+/* Card */
+.loginCard {
+  width: 360px;
+  padding: 32px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 0 40px rgba(0,0,0,0.45);
+  text-align: center;
+}
+
+/* Heading */
+.loginCard h2 {
+  margin-bottom: 18px;
+  font-size: 1.8rem;
+  color: #fff;
+}
+
+/* Form Layout */
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Inputs */
+.loginForm input {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  outline: none;
+  transition: 0.2s ease;
+}
+
+.loginForm input:focus {
+  border-color: #7dd3fc;
+  box-shadow: 0 0 8px #7dd3fc55;
+}
+
+/* Button */
+.loginForm button {
+  padding: 12px 14px;
+  background: linear-gradient(90deg, #6ee7b7, #7dd3fc);
+  color: #000;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.loginForm button:hover {
+  transform: translateY(-3px);
+}
+
+.loginForm button:active {
+  transform: translateY(0);
+  opacity: .85;
+}
+
+/* Message */
+.message {
+  color: #fca5a5;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
