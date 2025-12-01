@@ -1,59 +1,65 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import styles from './Chat.module.css'
-
-function loadChats() {
-  try {
-    const raw = localStorage.getItem('chats')
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-function saveChats(chats) {
-  localStorage.setItem('chats', JSON.stringify(chats))
-}
+import api from '../axios'
 
 export default function Chat() {
-  const [chats, setChats] = useState(() => loadChats())
+  const [chats, setChats] = useState([])
+  const [showSidebar, setShowSidebar] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
 
   const activeId = location.pathname.startsWith('/chat/') ? location.pathname.split('/')[2] : null
 
   useEffect(() => {
-    // keep chats in sync if other tab modified them
-    function onStorage(e) {
-      if (e.key === 'chats') setChats(loadChats())
+    // fetch chats for logged in user
+    let mounted = true
+    api.get('chatv2')
+      .then((res) => {
+        if (!mounted) return
+        const list = (res.data?.chats || []).map((c) => ({ id: c.id, title: c.title }))
+        setChats(list)
+      })
+      .catch((err) => {
+        console.error('failed to load chats', err?.response?.data || err.message)
+      })
+
+    return () => { mounted = false }
+  }, [])
+
+  // listen to global event (dispatched by ChatRoom mobile 'All' button)
+  useEffect(() => {
+    function onOpenChats() {
+      setShowSidebar(true)
     }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
+    window.addEventListener('openChats', onOpenChats)
+    return () => window.removeEventListener('openChats', onOpenChats)
   }, [])
 
   function handleNew() {
     // navigate to create chat (index of /chat)
-    navigate('/chat')
+    // mark navigation as "creating" so the auto-redirect doesn't immediately jump
+    navigate('/chat', { state: { creating: true } })
   }
 
   function handleOpen(id) {
     localStorage.setItem('lastChat', id)
     navigate(`/chat/${id}`)
+    // on mobile, hide the sidebar after choosing a chat
+    setShowSidebar(false)
   }
 
-  function handleDelete(id) {
-    const next = chats.filter((c) => c.id !== id)
-    setChats(next)
-    saveChats(next)
-    // if currently viewing this chat, navigate to /chat
-    const last = localStorage.getItem('lastChat')
-    if (last === id) localStorage.removeItem('lastChat')
-    if (location.pathname === `/chat/${id}`) navigate('/chat')
-  }
 
   // if user lands on /chat (no id), try to open last active chat or first chat
   useEffect(() => {
     if (location.pathname === '/chat') {
+      // Close sidebar when viewing CreateChat on mobile
+      setShowSidebar(false)
+
+      // if navigation included a creating flag, do not auto-redirect to an existing chat
+      const creating = location.state && location.state.creating
+      if (creating) return
+
       const last = localStorage.getItem('lastChat')
       if (last && chats.find((c) => c.id === last)) {
         navigate(`/chat/${last}`)
@@ -62,14 +68,17 @@ export default function Chat() {
         navigate(`/chat/${chats[0].id}`)
       }
     }
-  }, [location.pathname, chats, navigate])
+  }, [location.pathname, location.state, chats, navigate])
 
   return (
     <div className={styles.layout}>
-      <aside className={styles.sidebar}>
+      <aside className={`${styles.sidebar} ${showSidebar ? styles.sidebarOpen : ''}`}>
         <div className={styles.header}>
           <h3>Your Chats</h3>
-          <button className={styles.newBtn} onClick={handleNew}>+ New</button>
+          <div className={styles.headerActions}>
+            <button className={styles.newBtn} onClick={handleNew}>+ New</button>
+            <button className={styles.toggleBtn} onClick={() => setShowSidebar((s) => !s)}>Chats </button>
+          </div>
         </div>
 
         <ul className={styles.list}>
@@ -82,14 +91,13 @@ export default function Chat() {
               >
                 {c.title || 'Untitled'}
               </button>
-              <button className={styles.delete} onClick={() => handleDelete(c.id)}>✕</button>
             </li>
           ))}
         </ul>
       </aside>
-
+      
       <main className={styles.content}>
-        <Outlet context={{ chats, setChats, saveChats }} />
+        <Outlet context={{ chats, setChats }} />
       </main>
     </div>
   )
