@@ -127,7 +127,7 @@ export default function ChatRoom() {
         <button className={styles.menuBtn} onClick={handleOpenSidebar} title="Open chats">
           ☰
         </button>
-        <h2 className={styles.title}>Chat with Lylli 🤖</h2>
+        <h2 className={styles.title}>Chat with Lylii 🤖</h2>
       </div>
 
       <div className={styles.messages} ref={messagesRef}>
