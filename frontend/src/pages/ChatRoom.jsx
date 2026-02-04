@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useOutletContext, useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import styles from './ChatRoom.module.css'
-import api from '../axios'
+import api from '../api/axios'
 
 export default function ChatRoom() {
   const { chatId } = useParams()
@@ -30,7 +30,7 @@ export default function ChatRoom() {
 
     try { if (chatId) localStorage.setItem('lastChat', chatId) } catch { /* ignore */ }
 
-    const socket = io('http://localhost:3000', { withCredentials: true, transports: ['polling', 'websocket'] })
+    const socket = io('https://ltm-model.onrender.com', { withCredentials: true, transports: ['polling', 'websocket'] })
     socketRef.current = socket
 
     if (chatId && (!chats || !chats.find((c) => c.id === chatId))) {

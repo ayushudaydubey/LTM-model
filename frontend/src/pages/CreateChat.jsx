@@ -18,7 +18,6 @@ export default function CreateChat() {
       const res = await api.post('chat', { title })
       const id = res.data.chat._id
 
-      // store locally for sidebar
       const newChat = { id, title }
       const next = [...(chats || []), newChat]
       setChats?.(next)
@@ -33,20 +32,47 @@ export default function CreateChat() {
 
   return (
     <div className={styles.container}>
-      <h2>Create Chat</h2>
+      {/* Title */}
+      <h2>Start a New Chat</h2>
+
+      {/* Intro text */}
+      <p style={{ fontSize: '0.85rem', color: '#9aa0ab', fontWeight:"400", marginBottom: '14px' }}>
+        Create a dedicated conversation space with <strong>Lilly AI</strong>.
+        Give your chat a meaningful title so Lilly can assist you better with
+        context, memory, and focus.
+      </p>
+
+      {/* Message */}
       <p className={styles.msg}>{msg}</p>
 
+      {/* Form */}
       <form onSubmit={handleCreate} className={styles.form}>
         <input
           type="text"
-          placeholder="Chat title"
+          placeholder="e.g. Daily Planning, Project Ideas, Study Help"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className={styles.input}
         />
 
-        <button type="submit" className={styles.btn}>Create</button>
+        <button type="submit" className={styles.btn}>
+          Create Chat
+        </button>
       </form>
+
+      {/* Helper / footer text */}
+      <p
+        style={{
+          marginTop: '18px',
+          fontSize: '0.8rem',
+          color: '#9aa0ab',
+          lineHeight: '1.5'
+        }}
+      >
+        💡 <strong>Tip:</strong> Clear chat titles help Lilly remember the purpose
+        of the conversation and provide more accurate, personalized responses
+        using STM and LTM.
+      </p>
     </div>
   )
 }

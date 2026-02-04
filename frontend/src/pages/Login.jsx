@@ -1,54 +1,73 @@
 import { useState } from 'react'
 import styles from './Login.module.css'
 import { useNavigate } from 'react-router-dom'
-import axiosInstance from '../axios';
-
-
+import api from '../api/axios'
 
 export default function Login() {
   const [form, setForm] = useState({
-    email: "",
-    password: ""
-  });
+    email: '',
+    password: ''
+  })
 
-  const [msg, setMsg] = useState("");
-  const navigate = useNavigate();
+  const [msg, setMsg] = useState('')
+  const navigate = useNavigate()
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+    setForm({ ...form, [e.target.name]: e.target.value })
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMsg("");
+    e.preventDefault()
+    setMsg('')
 
     try {
-        // server should set an httpOnly cookie; axios instance already uses withCredentials
-        const res = await axiosInstance.post('auth/login', form)
+      // server sets httpOnly cookie
+      const res = await api.post('auth/login', form)
 
-        setMsg(res.data?.message || 'Login successful!')
-        navigate('/chat')
+      setMsg(res.data?.message || 'Login successful!')
+      navigate('/chat')
     } catch (err) {
-      // network error (server down) vs server error
-      if (!err.response) setMsg('Server unreachable. Is backend running on port 3000?')
-      else setMsg(err.response?.data?.message || 'Error')
+      if (!err.response)
+        setMsg('Server unreachable. Is backend running on port 3000?')
+      else
+        setMsg(err.response?.data?.message || 'Error')
     }
-  };
+  }
 
   return (
     <div className={styles.loginPage}>
       <div className={styles.loginCard}>
         <h2>Login</h2>
-        <p className={styles.message}>{msg}</p>
+
+        {msg && <p className={styles.message}>{msg}</p>}
 
         <form onSubmit={handleSubmit} className={styles.loginForm}>
-          <input name="email" placeholder="Email" onChange={handleChange} />
+          <input
+            name="email"
+            placeholder="Email"
+            onChange={handleChange}
+            required
+          />
 
-          <input name="password" type="password" placeholder="Password" onChange={handleChange} />
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            onChange={handleChange}
+            required
+          />
 
           <button type="submit">Login</button>
         </form>
+
+      
+        <p className={styles.loginHint}>
+          Don’t have an account?{' '}
+          <span className= {styles.register} onClick={() => navigate('/register')}>
+            Create account
+          </span>
+        </p>
       </div>
     </div>
-  );
+  )
 }

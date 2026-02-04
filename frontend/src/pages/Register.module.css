@@ -1,79 +1,129 @@
-/* Background */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 .registerPage {
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #0f0f0f, #1a1a1d);
-  font-family: 'Inter', sans-serif;
+  background: #0f0f0f;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 20px;
 }
 
-/* Card */
 .registerCard {
-  width: 380px;
-  padding: 32px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.12);
-  box-shadow: 0 0 40px rgba(0,0,0,0.4);
+  width: 100%;
+  max-width: 400px;
+  padding: 40px 32px;
+  background: #1a1a1a;
+  border-radius: 12px;
+ 
+  border: 1px solid #2a2a2a;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.registerCard h2 {
+  font-size: 1.85rem;
+  font-weight: 500;
+  color:#7dd3fc;
+  margin-bottom: 8px;
   text-align: center;
 }
 
-/* Heading */
-.registerCard h2 {
-  margin-bottom: 18px;
-  font-size: 1.8rem;
-  color: #fff;
-}
-
-/* Form Layout */
 .registerForm {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  margin-top: 24px;
 }
 
-/* Inputs */
 .registerForm input {
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.1);
-  color: #fff;
+  padding: 12px 16px;
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.95rem;
   outline: none;
-  transition: 0.2s ease;
+  transition: all 0.2s ease;
+}
+
+.registerForm input::placeholder {
+  color: #666666;
 }
 
 .registerForm input:focus {
   border-color: #7dd3fc;
-  box-shadow: 0 0 8px #7dd3fc55;
+  background: #121212;
 }
 
-/* Button */
 .registerForm button {
-  padding: 12px 14px;
-  background: linear-gradient(90deg, #6ee7b7, #7dd3fc);
-  color: #000;
+  padding: 12px 16px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, #6ee7b7, #7dd3fc);
+  color: #0f0f0f;
+  font-size: 1rem;
   font-weight: 600;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .registerForm button:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(110, 231, 183, 0.3);
 }
 
 .registerForm button:active {
   transform: translateY(0);
-  opacity: .9;
+}
+.loginHint{
+    font-size: 0.85rem;
+  font-weight: 400;
+  padding-top: 4px;
+  color:#7dd3fc;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.login{
+    font-size: 0.88rem;
+  font-weight: 500;
+  padding-top: 4px;
+  color:#7dd3fc;
+  margin-bottom: 8px;
+  cursor: pointer;
+  text-align: center;
+}
+.login:hover{
+  margin-bottom: 2px;
+
+  border-bottom: 1px #7dd3fc;
 }
 
-/* Message */
 .message {
-  color: #fca5a5;
-  margin-bottom: 10px;
+  color: #f87171;
   font-size: 0.9rem;
+  text-align: center;
+  min-height: 20px;
+  margin-top: 8px;
+}
+
+.message:empty {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .registerCard {
+    padding: 32px 24px;
+  }
+
+  .registerCard h2 {
+    font-size: 1.5rem;
+  }
 }

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import styles from './Chat.module.css'
-import api from '../axios'
+import api from '../api/axios'
+
 
 export default function Chat() {
   const [chats, setChats] = useState([])
