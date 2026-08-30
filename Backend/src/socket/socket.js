@@ -2,9 +2,22 @@ const { Server } = require("socket.io")
 const cookie = require('cookie')
 const jwt = require("jsonwebtoken")
 const userModel = require("../models/userModel")
+const chatModel = require("../models/chatModel")
 const aiService = require("../services/ai.services")
 const messageModel = require("../models/messageModel")
 const { queryMemory, createMemory } = require("../services/vector.service")
+
+function generateChatTitle(prompt) {
+  if (!prompt) return 'New Chat'
+  let clean = prompt.replace(/^[\s\n\r\t]+/, '').replace(/^(\/|#|\*|>)/, '').trim()
+  clean = clean.replace(/^(hey|hi|hello|please|can you|could you|help me with|tell me about|what is|how to)\s+/i, '')
+  if (!clean) clean = prompt.trim()
+  clean = clean.charAt(0).toUpperCase() + clean.slice(1)
+  if (clean.length > 35) {
+    clean = clean.slice(0, 32).trim() + '...'
+  }
+  return clean || 'Conversation'
+}
 
 function initSocketServer(httpServer) {
 
@@ -20,130 +33,156 @@ function initSocketServer(httpServer) {
     const cookies = cookie.parse(socket.handshake.headers?.cookie || "")
 
     if (!cookies.token) {
-      next(new Error("unauthorized access - no token provided "))
+      return next(new Error("unauthorized access - no token provided "))
     }
 
     try {
       const decoded = jwt.verify(cookies.token, process.env.JWT_SEC_KEY)
       const user = await userModel.findById(decoded.id)
 
+      if (!user) {
+        return next(new Error("authentication error - user not found"))
+      }
+
       socket.user = user
       next()
 
     } catch (error) {
-      next(new Error("authentication errro - invalid token "))
+      next(new Error("authentication error - invalid token "))
     }
 
   })
 
   io.on("connection", async (socket) => {
-    // console.log("user connected ", socket.id);
-
     socket.on("ai-message", async (messagePayload) => {
+      try {
+        if (!messagePayload || !messagePayload.chat || !messagePayload.content) {
+          return
+        }
 
-  
-      const [ message,vectors ] = await Promise.all([
-        messageModel.create({
-        user: socket.user._id,
-        chat: messagePayload.chat,
-        content: messagePayload.content,
-        role: "user"
-      }),
-       aiService.genrateVectors(messagePayload.content)
-      ])
+        // Auto-update chat title and last activity
+        try {
+          const chatDoc = await chatModel.findById(messagePayload.chat)
+          if (chatDoc) {
+            const isGenericTitle = !chatDoc.title || chatDoc.title === 'New Chat' || chatDoc.title === 'Untitled Chat' || /^Chat\s*\d*$/i.test(chatDoc.title)
+            const updates = { lastActivity: Date.now() }
+            if (isGenericTitle && messagePayload.content) {
+              const newTitle = generateChatTitle(messagePayload.content)
+              updates.title = newTitle
+              chatDoc.title = newTitle
+              socket.emit("chat-updated", { chatId: chatDoc._id, title: newTitle })
+            }
+            await chatModel.findByIdAndUpdate(messagePayload.chat, updates)
+          }
+        } catch (err) {
+          console.error("error auto-titling chat:", err.message)
+        }
 
-      await createMemory({
-        vectors,
-        messageId: message._id,
-        metadata: {
-          chat: messagePayload.chat,
+        // 1. Create User Message in MongoDB
+        const message = await messageModel.create({
           user: socket.user._id,
-          text: messagePayload.content
+          chat: messagePayload.chat,
+          content: messagePayload.content,
+          role: "user"
+        })
+
+        // 2. Generate and store vectors with safe fallback
+        let vectors = null
+        try {
+          vectors = await aiService.genrateVectors(messagePayload.content)
+          if (vectors) {
+            await createMemory({
+              vectors,
+              messageId: message._id,
+              metadata: {
+                chat: messagePayload.chat,
+                user: socket.user._id,
+                text: messagePayload.content
+              }
+            })
+          }
+        } catch (vErr) {
+          console.warn("Vector memory creation skipped:", vErr.message)
         }
-      })
 
-     /*  const memory = await queryMemory({
-        queryVector: vectors,
-        limit: 5,
-        metadata: {
-          user: socket.user._id
+        // 3. Query Memory & Chat History
+        let memory = []
+        try {
+          if (vectors) {
+            memory = await queryMemory({
+              queryVector: vectors,
+              limit: 5,
+              metadata: { user: socket.user._id }
+            })
+          }
+        } catch (qErr) {
+          console.warn("Vector query memory skipped:", qErr.message)
         }
-      })
 
-      console.log(memory);
+        const chatHistory = await messageModel
+          .find({ chat: messagePayload.chat })
+          .sort({ createdAt: -1 })
+          .limit(20)
+          .lean()
+          .then((messages) => messages.reverse())
 
-      const chatHistory = await messageModel.find({
-        chat: messagePayload.chat
-      }).sort({ createdAt: -1 }).limit(20).lean()
- 
-      chatHistory.reverse();    */
-
-      const  [memory,chatHistory] = await Promise.all([
-         queryMemory({
-        queryVector: vectors,
-        limit: 5,
-        metadata: {
-          user: socket.user._id
-        }
-      }),
-      messageModel.find({
-        chat: messagePayload.chat
-      }).sort({ createdAt: -1 }).limit(20).lean().then(messages=>messages.reverse())
- 
-      
-      ])
-
-      const stm = chatHistory.map(item => {
-        return {
-          // FIX: convert any invalid role to "user"
+        const stm = chatHistory.map((item) => ({
           role: item.role === "model" ? "model" : "user",
           parts: [{ text: item.content }]
-        }
-      })
+        }))
 
-      const ltm = [
-        {
-          // FIX: "system" → "user"
-          role: "user",
-          parts: [{
-            text: `
-            these are some previous messages  from the chat ,use them to genrate a response 
+        const memoryTexts = (memory || []).map((item) => item.metadata?.text).filter(Boolean)
+        const ltm = memoryTexts.length > 0 ? [
+          {
+            role: "user",
+            parts: [{
+              text: `These are relevant memories from past conversations:\n${memoryTexts.join("\n")}`
+            }]
+          }
+        ] : []
 
-            ${memory.map(item => item.metadata.text).join("\n")}
-            `
-          }]
-        }
-      ]
+        // 4. Generate AI Response from Gemini
+        const response = await aiService.generateResponse([...ltm, ...stm])
 
-      // console.log(ltm[0]);
-      // console.log(stm);
-
-      const response = await aiService.generateResponse([...ltm, ...stm])
-
-      const responseMessages = await messageModel.create({
-        user: socket.user._id,
-        chat: messagePayload.chat,
-        content: response,
-        role: "model"
-      })
-
-      const responseVectors = await aiService.genrateVectors(response)
-
-      await createMemory({
-        vectors: responseVectors,
-        messageId: responseMessages._id,
-        metadata: {
-          chat: messagePayload.chat,
+        // 5. Save AI message in MongoDB
+        const responseMessages = await messageModel.create({
           user: socket.user._id,
-          text: response
+          chat: messagePayload.chat,
+          content: response,
+          role: "model"
+        })
+
+        // 6. Vectorize AI response with safe fallback
+        try {
+          const responseVectors = await aiService.genrateVectors(response)
+          if (responseVectors) {
+            await createMemory({
+              vectors: responseVectors,
+              messageId: responseMessages._id,
+              metadata: {
+                chat: messagePayload.chat,
+                user: socket.user._id,
+                text: response
+              }
+            })
+          }
+        } catch (rvErr) {
+          console.warn("AI vector save skipped:", rvErr.message)
         }
-      })
 
-      socket.emit("ai-response", {
-        content: response,
-        chat: messagePayload.chat
-      })
+        // 7. Emit Response back to client
+        socket.emit("ai-response", {
+          content: response,
+          chat: messagePayload.chat
+        })
 
+      } catch (err) {
+        console.error("ai-message error:", err)
+        socket.emit("ai-response", {
+          content: "I encountered an error processing your request. Please try again.",
+          chat: messagePayload?.chat
+        })
+      }
     })
   })
 
