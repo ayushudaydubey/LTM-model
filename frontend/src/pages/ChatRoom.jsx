@@ -44,50 +44,63 @@ export default function ChatRoom({ isNew = false }) {
 
   const socketRef = useRef(null)
   const messagesRef = useRef(null)
+  const messagesEndRef = useRef(null)
   const isCreatingChatRef = useRef(false)
 
   const currentChatId = !isNew && chatId ? chatId : null
+  const currentChatIdRef = useRef(currentChatId)
+  const justCreatedChatIdRef = useRef(null)
 
-  // Socket Connection setup
+  // Keep ref synchronized
+  useEffect(() => {
+    currentChatIdRef.current = currentChatId
+  }, [currentChatId])
+
+  // Persistent Socket Connection setup (Does NOT disconnect on every chatId change)
   useEffect(() => {
     const socketUrl = getSocketUrl()
     const socket = io(socketUrl, {
       withCredentials: true,
-      transports: ['polling', 'websocket']
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000
     })
     socketRef.current = socket
 
     socket.on('ai-chunk', (data) => {
-      if (!currentChatId || data.chat === currentChatId) {
+      const activeChat = currentChatIdRef.current
+      if (!activeChat || data?.chat === activeChat) {
         setIsTyping(false)
         setMessages((prev) => {
           const lastMsg = prev[prev.length - 1]
           if (lastMsg && lastMsg.role === 'ai' && lastMsg.isStreaming) {
             return [
               ...prev.slice(0, -1),
-              { ...lastMsg, text: (lastMsg.text || '') + (data.content || '') }
+              { ...lastMsg, text: (lastMsg.text || '') + (data?.content || '') }
             ]
           } else {
-            return [...prev, { role: 'ai', text: data.content || '', isStreaming: true }]
+            return [...prev, { role: 'ai', text: data?.content || '', isStreaming: true }]
           }
         })
       }
     })
 
     socket.on('ai-response', (data) => {
-      if (!currentChatId || data.chat === currentChatId) {
+      const activeChat = currentChatIdRef.current
+      if (!activeChat || data?.chat === activeChat) {
         setIsTyping(false)
         setMessages((prev) => {
           const lastMsg = prev[prev.length - 1]
           if (lastMsg && lastMsg.role === 'ai' && lastMsg.isStreaming) {
             return [
               ...prev.slice(0, -1),
-              { role: 'ai', text: data.content, isStreaming: false }
+              { role: 'ai', text: data?.content || '', isStreaming: false }
             ]
           } else if (lastMsg && lastMsg.role === 'ai' && !lastMsg.isStreaming) {
             return prev
           } else {
-            return [...prev, { role: 'ai', text: data.content, isStreaming: false }]
+            return [...prev, { role: 'ai', text: data?.content || '', isStreaming: false }]
           }
         })
       }
@@ -95,7 +108,9 @@ export default function ChatRoom({ isNew = false }) {
 
     socket.on('chat-updated', (data) => {
       if (data?.chatId && data?.title) {
-        setCurrentTitle(data.title)
+        if (currentChatIdRef.current === data.chatId) {
+          setCurrentTitle(data.title)
+        }
         setChats?.((prev) =>
           prev.map((c) => (c.id === data.chatId ? { ...c, title: data.title } : c))
         )
@@ -109,13 +124,24 @@ export default function ChatRoom({ isNew = false }) {
     return () => {
       socket.disconnect()
     }
-  }, [currentChatId, setChats])
+  }, []) // Empty dependency array to maintain a single stable socket connection
 
-  // Load messages when chatId changes
+  const chatsRef = useRef(chats)
+  useEffect(() => {
+    chatsRef.current = chats
+  }, [chats])
+
+  // Load messages ONLY when chatId route actually changes
   useEffect(() => {
     if (!currentChatId) {
       setMessages([])
       setCurrentTitle('New Chat')
+      return
+    }
+
+    // If we just created this chat in memory and started streaming, do not overwrite messages from DB
+    if (justCreatedChatIdRef.current === currentChatId) {
+      justCreatedChatIdRef.current = null
       return
     }
 
@@ -133,7 +159,7 @@ export default function ChatRoom({ isNew = false }) {
         if (res.data?.chat?.title) {
           setCurrentTitle(res.data.chat.title)
         } else {
-          const match = (chats || []).find((c) => c.id === currentChatId)
+          const match = (chatsRef.current || []).find((c) => c.id === currentChatId)
           if (match?.title) setCurrentTitle(match.title)
         }
       })
@@ -144,7 +170,7 @@ export default function ChatRoom({ isNew = false }) {
     return () => {
       mounted = false
     }
-  }, [currentChatId, chats])
+  }, [currentChatId]) // STRICTLY [currentChatId] - never reload on chats list update!
 
   // Auto scroll messages to bottom
   useEffect(() => {
@@ -152,6 +178,7 @@ export default function ChatRoom({ isNew = false }) {
     if (el) {
       el.scrollTop = el.scrollHeight
     }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
   // Copy message text
@@ -190,6 +217,10 @@ export default function ChatRoom({ isNew = false }) {
       const newId = res.data?.chat?._id || res.data?.chat?.id
 
       if (newId) {
+        justCreatedChatIdRef.current = newId
+        currentChatIdRef.current = newId
+        setCurrentTitle(autoTitle)
+
         // Optimistically add to chats list
         const newChatItem = {
           id: newId,
@@ -396,6 +427,8 @@ export default function ChatRoom({ isNew = false }) {
                 </div>
               </div>
             )}
+
+            <div ref={messagesEndRef} style={{ height: '1px', width: '100%' }} />
           </div>
         )}
       </div>
