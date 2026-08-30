@@ -57,10 +57,39 @@ export default function ChatRoom({ isNew = false }) {
     })
     socketRef.current = socket
 
+    socket.on('ai-chunk', (data) => {
+      if (!currentChatId || data.chat === currentChatId) {
+        setIsTyping(false)
+        setMessages((prev) => {
+          const lastMsg = prev[prev.length - 1]
+          if (lastMsg && lastMsg.role === 'ai' && lastMsg.isStreaming) {
+            return [
+              ...prev.slice(0, -1),
+              { ...lastMsg, text: (lastMsg.text || '') + (data.content || '') }
+            ]
+          } else {
+            return [...prev, { role: 'ai', text: data.content || '', isStreaming: true }]
+          }
+        })
+      }
+    })
+
     socket.on('ai-response', (data) => {
       if (!currentChatId || data.chat === currentChatId) {
         setIsTyping(false)
-        setMessages((prev) => [...prev, { role: 'ai', text: data.content }])
+        setMessages((prev) => {
+          const lastMsg = prev[prev.length - 1]
+          if (lastMsg && lastMsg.role === 'ai' && lastMsg.isStreaming) {
+            return [
+              ...prev.slice(0, -1),
+              { role: 'ai', text: data.content, isStreaming: false }
+            ]
+          } else if (lastMsg && lastMsg.role === 'ai' && !lastMsg.isStreaming) {
+            return prev
+          } else {
+            return [...prev, { role: 'ai', text: data.content, isStreaming: false }]
+          }
+        })
       }
     })
 
@@ -320,7 +349,10 @@ export default function ChatRoom({ isNew = false }) {
                     <div className={styles.bubbleHeader}>
                       {m.role === 'ai' ? 'Lilly AI' : 'You'}
                     </div>
-                    <div className={styles.bubbleContent}>{m.text}</div>
+                    <div className={styles.bubbleContent}>
+                      {m.text}
+                      {m.isStreaming && <span className={styles.streamingCursor} />}
+                    </div>
                   </div>
 
                   {m.role === 'ai' && (

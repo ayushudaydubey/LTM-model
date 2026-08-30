@@ -12,8 +12,12 @@ const path = require("path")
 app.use(express.json())
 app.use(cookieParser())
 app.use(express.static(path.join(__dirname,"../public")))
+const allowedOrigins = process.env.FRONTEND_URL
+  ? [process.env.FRONTEND_URL, "http://localhost:5173", "http://localhost:3000"]
+  : (origin, callback) => callback(null, true);
+
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET','POST','PUT','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization']
@@ -24,7 +28,6 @@ app.use(cors({
 app.use("/api/auth",userRoutes)
 app.use("/api/chat",chatRoutes)
 // additional API routes (newer version)
-app.use("/api/chatv2", chatApiRoutes)
 app.use("/api/chatv2", chatApiRoutes)
 
 app.get("*name",(req,res)=>{
